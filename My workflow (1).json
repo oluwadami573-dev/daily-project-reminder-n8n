@@ -1,0 +1,187 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8,
+              "triggerAtMinute": null
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b9217069-aa0a-4a82-a04b-4618922969d1",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1FhkRyRDCBjLR7U3aDX7o8tM17yUXb7hoYXN-X8IoFP4",
+          "mode": "list",
+          "cachedResultName": "Project Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FhkRyRDCBjLR7U3aDX7o8tM17yUXb7hoYXN-X8IoFP4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 560046355,
+          "mode": "list",
+          "cachedResultName": "Projects",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FhkRyRDCBjLR7U3aDX7o8tM17yUXb7hoYXN-X8IoFP4/edit#gid=560046355"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "680a6313-1432-48d2-920b-26c8b0b1cf69",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "n7X2d3ko7yqmibfA",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "afaaeb15-b3fc-4e80-8280-8f2a0620a89b",
+              "leftValue": "={{ $json.Status }}",
+              "rightValue": "Done",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "0dfc8bbf-aead-437d-84c9-005cf405280d",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst priorityColor = {\n  High: '#e53935',\n  Medium: '#fb8c00',\n  Low: '#43a047'\n};\n\nlet rows = items.map(item => {\n  const p = item.json;\n  const color = priorityColor[p.Priority] || '#555';\n  return `\n    <tr>\n      <td style=\"padding:8px;border-bottom:1px solid #eee;\">${p.Project}</td>\n      <td style=\"padding:8px;border-bottom:1px solid #eee;\">${p.Status}</td>\n      <td style=\"padding:8px;border-bottom:1px solid #eee;\">${p.Deadline}</td>\n      <td style=\"padding:8px;border-bottom:1px solid #eee;color:${color};font-weight:bold;\">${p.Priority}</td>\n      <td style=\"padding:8px;border-bottom:1px solid #eee;\">${p.Notes || ''}</td>\n    </tr>`;\n}).join('');\n\nconst html = `\n  <h2>Your Active Projects</h2>\n  <table style=\"border-collapse:collapse;width:100%;font-family:Arial,sans-serif;\">\n    <tr style=\"background:#305496;color:white;\">\n      <th style=\"padding:8px;text-align:left;\">Project</th>\n      <th style=\"padding:8px;text-align:left;\">Status</th>\n      <th style=\"padding:8px;text-align:left;\">Deadline</th>\n      <th style=\"padding:8px;text-align:left;\">Priority</th>\n      <th style=\"padding:8px;text-align:left;\">Notes</th>\n    </tr>\n    ${rows}\n  </table>`;\n\nreturn [{ json: { emailBody: html } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "5fd15595-3ae7-4367-9704-add9ff36d8fd",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "sendTo": "arodamilola573@gmail.com",
+        "subject": "=Daily Project Reminders – {{ $now.format(\"DD MMM\") }}",
+        "message": "={{ $json.emailBody }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "bb3412b4-b4a2-4f1d-ae76-1ee639d2dc35",
+      "name": "Send a message",
+      "webhookId": "b3a943fe-d94b-44fa-94a1-8efca7652a39",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "w82xh2vGyXkA9GJv",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c281aa43-dbd6-4971-bae6-2d1d93cd0d39",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6857e235b8b6d8f7c8c91422409e32b339b7007ca42469e3780afb0ab34bf3ab"
+  },
+  "id": "vqrswHHx4v4ckKdY",
+  "tags": []
+}
